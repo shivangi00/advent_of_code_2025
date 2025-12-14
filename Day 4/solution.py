@@ -6,56 +6,76 @@ puzzle2: generic and optimised solution
 """
 
 def parse_input(filename):
-    grid = []
+    ranges = []
+    ids = []
     with open(filename) as f:
-        for line in f:
-            line = line.strip()
-            grid.append(list(line))
-    return grid
+        lines = [line.strip() for line in f]
 
-def total_rolls(grid, puzzle):
-    sum = 0
-    max_rolls_removed = 0
-    rows = len(grid)
-    cols = len(grid[0])
+    reading_ranges = True
+    for line in lines:
+        if line == "":
+            reading_ranges = False
+            continue
+        if reading_ranges:
+            a, b = map(int, line.split("-"))
+            ranges.append((a, b))
+        else:
+            ids.append(int(line))
 
-    while True:
-        rolls_removed = False
-        for row in range(rows):
-            for col in range(cols):
-                adj_rolls = 0
+    return ranges, ids
 
-                for dir_r in [-1, 0, 1]:
-                    for dir_c in [-1, 0, 1]:
-                        nr, nc = row + dir_r, col + dir_c
 
-                        if 0 <= nr < rows and 0 <= nc < cols:
-                            if grid[nr][nc] == "@":
-                                adj_rolls += 1
-                        
-                if grid[row][col] == "@" and adj_rolls < 5:
-                    sum += 1
-                    rolls_removed = True
-                    if puzzle == 2:
-                        grid[row][col] = '.'
-                        max_rolls_removed += 1
-        if not rolls_removed:
-            break
-    
-        if puzzle == 1:
-            return sum
-    return max_rolls_removed
+def brute_force_fresh_count(ranges, ids):
+    """Puzzle 1: Count how many available IDs are fresh."""
+    fresh = 0
+    for x in ids:
+        for a, b in ranges:
+            if a <= x <= b:
+                fresh += 1
+                break
+    return fresh
+
+
+def merge_ranges(ranges):
+    """Helper for aggregated ranges."""
+    if not ranges:
+        return []
+
+    ranges = sorted(ranges)
+    merged = []
+    s, e = ranges[0]
+
+    for a, b in ranges[1:]:
+        if a <= e + 1:      # overlapping or touching
+            e = max(e, b)
+        else:
+            merged.append((s, e))
+            s, e = a, b
+    merged.append((s, e))
+
+    return merged
+
+
+def count_total_fresh_ids(ranges):
+    """Puzzle 2: Count the total number of distinct fresh IDs."""
+    merged = merge_ranges(ranges)
+    total = 0
+    for s, e in merged:
+        total += (e - s + 1)   # inclusive range
+    return total
 
 
 def puzzle1():
-    grid = parse_input("/Users/shivangimalik/Documents/Advent of Code/Day 4/input.txt")
-    result = total_rolls(grid, 1)
+    ranges, ids = parse_input('/Users/shivangimalik/Documents/advent_of_code_2025/Day 5/input.txt')
+    result = brute_force_fresh_count(ranges, ids)
     print(result)
 
+
 def puzzle2():
-    grid = parse_input("/Users/shivangimalik/Documents/Advent of Code/Day 4/input.txt")
-    result = total_rolls(grid, 2)
+    ranges, ids = parse_input('/Users/shivangimalik/Documents/advent_of_code_2025/Day 5/input.txt')
+    result = count_total_fresh_ids(ranges)
     print(result)
+
 
 if __name__ == "__main__":
     puzzle1()
